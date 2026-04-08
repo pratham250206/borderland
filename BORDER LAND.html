@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Number Survival Game</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background: radial-gradient(circle at top, #0f0f0f, #000);
+      color: #f5f5f5;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+    }
+    h1, h2, h3 {
+      text-shadow: 0px 0px 8px rgba(255,0,80,0.7);
+      letter-spacing: 1px;
+    }
+    .container {
+      max-width: 750px;
+      margin: 80px auto;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(12px);
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 0 25px rgba(255,0,80,0.4);
+      animation: fadeIn 1.2s ease;
+    }
+    button {
+      background: linear-gradient(45deg, #ff004c, #ff3366);
+      border: none;
+      padding: 14px 35px;
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+      border-radius: 30px;
+      transition: transform 0.3s, box-shadow 0.3s;
+      margin-top: 20px;
+    }
+    button:hover {
+      transform: translateY(-3px) scale(1.05);
+      box-shadow: 0px 0px 15px rgba(255,0,80,0.7);
+    }
+    .scoreboard {
+      margin-top: 30px;
+      font-size: 18px;
+      display: flex;
+      justify-content: space-around;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .life-box {
+      background: rgba(255,255,255,0.08);
+      padding: 15px 20px;
+      border-radius: 15px;
+      box-shadow: inset 0 0 10px rgba(255,0,80,0.4);
+      flex: 1;
+      min-width: 120px;
+    }
+    .life-box span {
+      font-size: 22px;
+      font-weight: bold;
+      color: #ff3366;
+      text-shadow: 0 0 10px rgba(255,0,80,0.6);
+    }
+    .result {
+      margin-top: 25px;
+      font-size: 20px;
+      font-weight: bold;
+      color: #ffeaea;
+      text-shadow: 0px 0px 6px rgba(255,100,120,0.7);
+    }
+    .popup {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.85);
+      justify-content: center;
+      align-items: center;
+      animation: fadeIn 0.4s ease;
+      z-index: 9999;
+    }
+    .popup-content {
+      background: rgba(30, 30, 30, 0.95);
+      border: 2px solid #ff004c;
+      padding: 30px;
+      border-radius: 15px;
+      max-width: 400px;
+      text-align: center;
+      box-shadow: 0 0 25px rgba(255,0,80,0.5);
+      animation: zoomIn 0.5s ease;
+      color: #fff;
+    }
+    .hidden { display: none; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes zoomIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  </style>
+</head>
+<body>
+
+  <!-- Start Page -->
+  <div id="startPage" class="container">
+    <h1>🔥 Number Survival 🔥</h1>
+    <p>Welcome challenger. Do you have what it takes to outsmart the Borderland?</p>
+    <button onclick="goToInstructions()">Enter the Game</button>
+  </div>
+
+  <!-- Instructions Page -->
+  <div id="instructionsPage" class="container hidden">
+    <h1>📜 Rules & Instructions</h1>
+    <ul style="text-align:left; font-size:16px; line-height:1.6;">
+      <li>⚔️ Pick a number between <b>0–100</b> each round.</li>
+      <li>💥 Duplicate numbers → both matching players lose 1 life, survivor gains +1 life.</li>
+      <li>🎯 All unique numbers → closest to 0.8 × average wins the round.</li>
+      <li>📜 New rules appear every 2 rounds — watch for surprises!</li>
+      <li>❤️ Start with 10 lives. Last survivor standing wins!</li>
+      <li>🤖 Bots are smarter than they look 😈.</li>
+    </ul>
+    <button onclick="goToGame()">Start Battle</button>
+  </div>
+
+  <!-- Game Page -->
+  <div id="gamePage" class="container hidden">
+    <h1>Number Survival</h1>
+    <p>Enter your number (0–100):</p>
+    <input type="number" id="playerInput" min="0" max="100" style="padding:10px; border-radius:8px; border:none; text-align:center; font-size:18px;">
+    <br>
+    <button onclick="playRound()">Submit</button>
+
+    <div class="scoreboard">
+      <div class="life-box" id="playerBox">Player Lives: <br><span id="playerLives">10</span></div>
+      <div class="life-box" id="bot1Box">Bot A Lives: <br><span id="bot1Lives">10</span></div>
+      <div class="life-box" id="bot2Box">Bot B Lives: <br><span id="bot2Lives">10</span></div>
+      <div class="life-box">Round: <br><span id="roundNum">1</span></div>
+    </div>
+
+    <div class="result" id="result"></div>
+  </div>
+
+  <!-- Popups -->
+  <div id="popup" class="popup">
+    <div class="popup-content">
+      <p id="popupMessage"></p>
+      <button onclick="closePopup()">OK</button>
+    </div>
+  </div>
+
+  <div id="winnerPopup" class="popup">
+    <div class="popup-content">
+      <h2>🎉 Congratulations! 🎉</h2>
+      <p>You are the last survivor!</p>
+    </div>
+  </div>
+
+  <div id="loserPopup" class="popup">
+    <div class="popup-content">
+      <h2>💀 Game Over 💀</h2>
+      <p>You lost all your lives...</p>
+    </div>
+  </div>
+
+  <div id="rulesPopup" class="popup">
+    <div class="popup-content">
+      <h2>📜 New Rule Added!</h2>
+      <p id="rulesText" style="text-align:left; font-size:16px; line-height:1.5;"></p>
+      <button onclick="closeRulesPopup()">Continue</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <script>
+    // Navigation
+    function goToInstructions() { document.getElementById("startPage").classList.add("hidden"); document.getElementById("instructionsPage").classList.remove("hidden"); }
+    function goToGame() { document.getElementById("instructionsPage").classList.add("hidden"); document.getElementById("gamePage").classList.remove("hidden"); }
+
+    // Game state
+    let playerLives=10, bot1Lives=10, bot2Lives=10, round=1, gameOver=false;
+    const funnyGyaan=["😅 Life lesson: Don’t copy others blindly.","🤔 Even smart choices can go wrong.","😂 Borderland Rule #1: Expect betrayal.","🙃 Sometimes survival is just luck.","😎 Bots don’t panic, why should you?"];
+
+    // Rules
+    const newRules=[
+      "⚡ Even numbers give a tiny boost next round (+0.5 life) — plan wisely!",
+      "🔥 Picking 0 or 100 is risky! Double your chance of losing a life if a duplicate occurs.",
+      "🎲 If a bot hits the exact average, it loses 1 life — even bots get punished!",
+      "💀 Rounds divisible by 5 unleash chaos: random life deduction to all players!",
+      "🎯 The target changes! For this round, aim for 0.9 × average instead of 0.8."
+    ];
+    let nextRuleIndex=0;
+
+    function smartBotChoice(playerGuess, otherBotGuess){ let base=Math.floor(0.8*((playerGuess+otherBotGuess)/2)); base=Math.max(0,Math.min(100,base)); return base+Math.floor(Math.random()*5-2); }
+
+    function playRound(){
+      if(gameOver) return;
+      const inputField=document.getElementById("playerInput");
+      const playerNum=parseInt(inputField.value);
+      if(isNaN(playerNum)||playerNum<0||playerNum>100){ playerLives--; showPopup("⚠️ Invalid number! You lost 1 life."); updateUI(); checkGameOver(); return; }
+
+      let bot1Num=bot1Lives>0?smartBotChoice(playerNum,50):null;
+      let bot2Num=bot2Lives>0?smartBotChoice(playerNum,bot1Num||50):null;
+
+      let roundResult=`You: ${playerNum}`;
+      if(bot1Lives>0) roundResult+=`, Bot A: ${bot1Num}`;
+      if(bot2Lives>0) roundResult+=`, Bot B: ${bot2Num}`;
+      roundResult+="<br>";
+
+      let nums=[], ids=[];
+      if(playerLives>0){ nums.push(playerNum); ids.push("player"); }
+      if(bot1Lives>0){ nums.push(bot1Num); ids.push("bot1"); }
+      if(bot2Lives>0){ nums.push(bot2Num); ids.push("bot2"); }
+
+      const duplicates=nums.filter((v,i,a)=>a.indexOf(v)!==i);
+      if(duplicates.length>0){
+        let uniqueNums=nums.filter((v,i,a)=>a.indexOf(v)===a.lastIndexOf(v));
+        ids.forEach((id,i)=>{
+          if(duplicates.includes(nums[i])){ if(id==="player"){ playerLives--; showPopup(randomGyaan()); } if(id==="bot1") bot1Lives--; if(id==="bot2") bot2Lives--; }
+          if(uniqueNums.includes(nums[i])){ if(id==="player") playerLives++; if(id==="bot1") bot1Lives++; if(id==="bot2") bot2Lives++; }
+        });
+        roundResult+="⚡ Duplicate rule triggered!";
+      } else {
+        const avg=nums.reduce((a,b)=>a+b,0)/nums.length;
+        const target=0.8*avg;
+        roundResult+=`Target: ${target.toFixed(2)}<br>`;
+        const diffs=nums.map(n=>Math.abs(n-target));
+        const minDiff=Math.min(...diffs);
+        const winners=diffs.map(d=>d===minDiff);
+        ids.forEach((id,i)=>{ if(!winners[i]){ if(id==="player"){ playerLives--; showPopup(randomGyaan()); } if(id==="bot1") bot1Lives--; if(id==="bot2") bot2Lives--; } });
+      }
+
+      document.getElementById("result").innerHTML=roundResult;
+      round++;
+      updateUI();
+      checkGameOver();
+      checkNewRule();
+      inputField.value="";
+    }
+
+    function updateUI(){
+      document.getElementById("playerLives").textContent=playerLives;
+      document.getElementById("bot1Lives").textContent=bot1Lives;
+      document.getElementById("bot2Lives").textContent=bot2Lives;
+      document.getElementById("roundNum").textContent=round;
+      if(bot1Lives<=0) document.getElementById("bot1Box").style.display="none";
+      if(bot2Lives<=0) document.getElementById("bot2Box").style.display="none";
+    }
+
+    function checkGameOver(){
+      if(playerLives<=0){ gameOver=true; document.getElementById("loserPopup").style.display="flex"; launchConfetti(); }
+      else if(bot1Lives<=0&&bot2Lives<=0){ gameOver=true; document.getElementById("winnerPopup").style.display="flex"; launchConfetti(); }
+    }
+
+    function showPopup(msg){ document.getElementById("popupMessage").textContent=msg; document.getElementById("popup").style.display="flex"; }
+    function closePopup(){ document.getElementById("popup").style.display="none"; }
+    function randomGyaan(){ return funnyGyaan[Math.floor(Math.random()*funnyGyaan.length)]; }
+
+    // New Rules every 2 rounds
+    function checkNewRule(){
+      if(round%2===0 && nextRuleIndex<newRules.length){
+        showRulesPopup(newRules[nextRuleIndex]);
+        nextRuleIndex++;
+      }
+    }
+    function showRulesPopup(rule){
+      document.getElementById("rulesText").innerHTML=`New rule: ${rule}<br><br><i>Previous rules still apply!</i>`;
+      document.getElementById("rulesPopup").style.display="flex";
+      gameOver=true;
+    }
+    function closeRulesPopup(){ document.getElementById("rulesPopup").style.display="none"; gameOver=false; }
+
+    function launchConfetti(){
+      const duration=3*1000, end=Date.now()+duration;
+      (function frame(){
+        confetti({particleCount:6, angle:60, spread:55, origin:{x:0}});
+        confetti({particleCount:6, angle:120, spread:55, origin:{x:1}});
+        if(Date.now()<end) requestAnimationFrame(frame);
+      }());
+    }
+  </script>
+</body>
+</html>
